@@ -21,22 +21,33 @@ function App() {
     timerRunning: false,
   })
 
-  const timeout = setTimeout(() => {
-    if (timeLeft && play) {
-      setTimeLeft(timeLeft - 1)
-    }
-  }, 1000)
+  const [timeoutId, setTimeoutId] = useState<number | null>(null);
+  const [breakStarted, setBreakStarted] = useState(false);
+  let timerID: number; // Declare timerID outside the useEffect
 
   useEffect(() => {
-    let timerID: number;
-    if (!displayState.timerRunning) return
+    const timeoutId = setTimeout(() => {
+      if (timeLeft > 0 && play) {
+        setTimeLeft((prevTimeLeft) => prevTimeLeft - 1)
+      }
+    }, 1000)
 
-    if (displayState.timerRunning) {
-      timerID = window.setInterval(decrementDisplay, 1000)
+    setTimeoutId(timeoutId);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [timeLeft, play]);
+
+  useEffect(() => {
+    if (!displayState.timerRunning) {
+      clearInterval(timerID); // Clear the interval when timer stops
+    } else {
+      timerID = window.setInterval(decrementDisplay, 1000); // Assign the interval ID
     }
 
     return () => {
-      window.clearInterval(timerID)
+      clearInterval(timerID); // Clear the interval when component unmounts
     }
   }, [displayState.timerRunning])
 
@@ -50,10 +61,16 @@ function App() {
         timeType: prev.timeType === "Session" ? "Break" : "Session",
         time: prev.timeType === "Session" ? breakLength : sessionLength,
       }))
+
+      setBreakStarted(true);
     }
   }, [displayState, breakLength, sessionLength])
 
   const reset = () => {
+    clearTimeout(timeoutId); // Clear the countdown timeout
+    clearInterval(timerID); // Clear the interval for decrementing the display
+
+    // Reset the state values
     setBreakLength(defaultBreakLength)
     setSessionLength(defaultSessionLength)
     setDisplayState({
@@ -61,6 +78,9 @@ function App() {
       timeType: "Session",
       timerRunning: false,
     })
+
+    setBreakStarted(false); // Reset the breakStarted state
+
     const audio = document.getElementById("beep") as HTMLAudioElement
     audio.pause()
     audio.currentTime = 0
@@ -96,19 +116,6 @@ function App() {
     })
   }
 
-  const clock = () => {
-    if (play) {
-      timeout
-      reset()
-    } else {
-      clearTimeout(timeout)
-    }
-  }
-
-  useEffect(() => {
-    clock()
-  }, [play, timeLeft, timeout])
-
   return (
     <>
       <h2>25 + 5 Clock</h2>
@@ -141,6 +148,7 @@ function App() {
 
       <Display
         displayState={displayState}
+        breakStarted={breakStarted}
         reset={reset}
         startStop={startStop}
       />
