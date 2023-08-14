@@ -67,6 +67,7 @@ function App() {
   }
 
   const startStop = () => {
+    setPlay((prevPlay) => !prevPlay)
     setDisplayState((prev) => ({
       ...prev,
       timerRunning: !prev.timerRunning,
