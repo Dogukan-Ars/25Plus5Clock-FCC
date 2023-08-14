@@ -11,8 +11,6 @@ const max = 60 * 60
 const interval = 60
 
 function App() {
-  const [play, setPlay] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(1500)
   const [breakLength, setBreakLength] = useState(defaultBreakLength)
   const [sessionLength, setSessionLength] = useState(defaultSessionLength)
   const [displayState, setDisplayState] = useState<DisplayState>({
@@ -21,33 +19,16 @@ function App() {
     timerRunning: false,
   })
 
-  const [timeoutId, setTimeoutId] = useState<number | null>(null);
-  const [breakStarted, setBreakStarted] = useState(false);
-  let timerID: number; // Declare timerID outside the useEffect
-
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (timeLeft > 0 && play) {
-        setTimeLeft((prevTimeLeft) => prevTimeLeft - 1)
-      }
-    }, 1000)
+    let timerID: number;
+    if (!displayState.timerRunning) return
 
-    setTimeoutId(timeoutId);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [timeLeft, play]);
-
-  useEffect(() => {
-    if (!displayState.timerRunning) {
-      clearInterval(timerID); // Clear the interval when timer stops
-    } else {
-      timerID = window.setInterval(decrementDisplay, 1000); // Assign the interval ID
+    if (displayState.timerRunning) {
+      timerID = window.setInterval(decrementDisplay, 1000)
     }
 
     return () => {
-      clearInterval(timerID); // Clear the interval when component unmounts
+      window.clearInterval(timerID)
     }
   }, [displayState.timerRunning])
 
@@ -61,16 +42,10 @@ function App() {
         timeType: prev.timeType === "Session" ? "Break" : "Session",
         time: prev.timeType === "Session" ? breakLength : sessionLength,
       }))
-
-      setBreakStarted(true);
     }
   }, [displayState, breakLength, sessionLength])
 
   const reset = () => {
-    clearTimeout(timeoutId); // Clear the countdown timeout
-    clearInterval(timerID); // Clear the interval for decrementing the display
-
-    // Reset the state values
     setBreakLength(defaultBreakLength)
     setSessionLength(defaultSessionLength)
     setDisplayState({
@@ -78,16 +53,12 @@ function App() {
       timeType: "Session",
       timerRunning: false,
     })
-
-    setBreakStarted(false); // Reset the breakStarted state
-
     const audio = document.getElementById("beep") as HTMLAudioElement
     audio.pause()
     audio.currentTime = 0
   }
 
   const startStop = () => {
-    setPlay((prevPlay) => !prevPlay)
     setDisplayState((prev) => ({
       ...prev,
       timerRunning: !prev.timerRunning,
@@ -148,7 +119,6 @@ function App() {
 
       <Display
         displayState={displayState}
-        breakStarted={breakStarted}
         reset={reset}
         startStop={startStop}
       />
